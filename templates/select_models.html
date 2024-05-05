@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Select Models for Monitoring</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            padding: 0;
+            margin: 0;
+            background-color: #f9f9f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: auto;
+        }
+        .container {
+            width: 350px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            position: relative;
+            padding-left: 35px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            user-select: none;
+        }
+        label input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 25px;
+            width: 25px;
+            background-color: #eee;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        label:hover input ~ .checkmark {
+            background-color: #ccc;
+        }
+        label input:checked ~ .checkmark {
+            background-color: #2196F3;
+        }
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+        label input:checked ~ .checkmark:after {
+            display: block;
+        }
+        label .checkmark:after {
+            left: 9px;
+            top: 5px;
+            width: 7px;
+            height: 13px;
+            border: solid white;
+            border-width: 0 3px 3px 0;
+            transform: rotate(45deg);
+        }
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #00a2ff;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0094cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Select Models and Upload Zip</h2>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label><input type="checkbox" name="models" value="yolov8n"><span class="checkmark"></span> YOLOv8n</label>
+                <label><input type="checkbox" name="models" value="yolov8s"><span class="checkmark"></span> YOLOv8s</label>
+                <label><input type="checkbox" name="models" value="yolov8m"><span class="checkmark"></span> YOLOv8m</label>
+                <label><input type="checkbox" name="models" value="yolov8l"><span class="checkmark"></span> YOLOv8l</label>
+                <label><input type="checkbox" name="models" value="yolov8x"><span class="checkmark"></span> YOLOv8x</label>
+            </div>
+            <div class="form-group">
+                <label for="file">Upload Zip Folder:</label>
+                <input type="file" id="file" name="file" accept=".zip">
+            </div>
+            <div class="button-container">
+                <button type="submit">Submit</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

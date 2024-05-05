@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Metrics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            text-align: left;
+            padding-left: 20px;
+            width: 100%;
+            max-width: 500px; /* Adjust the maximum width of the container as needed */
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .button {
+            display: block;
+            width: 100%;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-align: left; /* Align text to the left */
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>System Metrics</h1>
+        <form action="/process_metrics" method="post">
+            <button class="button" type="submit" name="metric" value="carbon_emission">Carbon Emission</button>
+            <button class="button" type="submit" name="metric" value="cpu_utilization">CPU Utilization</button>
+        </form>
+    </div>
+</body>
+</html>

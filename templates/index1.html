@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real-Time Emissions and System Utilization Dashboard</title>
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .chart-container {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .flex-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+        canvas {
+            width: 100%;
+            height: 300px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        h2 {
+            color: #333;
+            text-align: center;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Real-Time Emissions and System Utilization Dashboard</h1>
+
+    <div class="flex-container">
+        <div class="chart-container" style="flex: 1; min-width: 300px;">
+            <h2>Model Emissions (Instantaneous and Cumulative)</h2>
+            <canvas id="emissionsChart"></canvas>
+        </div>
+        <div class="chart-container" style="flex: 1; min-width: 300px;">
+            <h2>System Utilization</h2>
+            <canvas id="utilizationChart"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <h2>Emissions Data</h2>
+        <table id="emissionsTable">
+            <thead>
+                <tr>
+                    <th>Model</th>
+                    <th>Instantaneous Emissions (kg CO2)</th>
+                    <th>Cumulative Emissions (kg CO2)</th>
+                    <th>Carbon Tax (INR)</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const ctxEmissions = document.getElementById('emissionsChart').getContext('2d');
+        const emissionsChart = new Chart(ctxEmissions, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Emissions (kg of CO2)',
+                            font: { size: 16, weight: 'bold', family: 'Arial' },
+                            color: '#333'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time',
+                            font: { size: 16, weight: 'bold', family: 'Arial' },
+                            color: '#333'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: 'rgb(255, 99, 132)'
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        bodyFont: { size: 14 }
+                    }
+                },
+                elements: {
+                    line: {
+                        tension: 0.0
+                    },
+                    point: {
+                        radius: 5
+                    }
+                },
+                animation: {
+                    duration: 300
+                }
+            }
+        });
+
+        const ctxUtilization = document.getElementById('utilizationChart').getContext('2d');
+        const utilizationChart = new Chart(ctxUtilization, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'CPU Usage (%)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                    data: [],
+                    fill: true
+                }, {
+                    label: 'GPU Usage (%)',
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    data: [],
+                    fill: true
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        suggestedMax: 100,
+                        title: {
+                            display: true,
+                            text: 'Usage (%)',
+                            font: { size: 16, weight: 'bold', family: 'Arial' },
+                            color: '#333'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time',
+                            font: { size: 16, weight: 'bold', family: 'Arial' },
+                            color: '#333'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 14
+                            }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        bodyFont: { size: 14 }
+                    }
+                },
+                animation: {
+                    duration: 300
+                }
+            }
+        });
+
+        const socket = io();
+
+        socket.on('model_emissions', function(data) {
+            updateEmissionsChart(data);
+            updateEmissionsData(data);
+        });
+
+        socket.on('system_metrics', function(data) {
+            updateUtilizationChart(data);
+        });
+
+        function updateEmissionsChart(data) {
+            const timestamp = new Date().toLocaleTimeString();
+            emissionsChart.data.labels.push(timestamp);
+            data.results.forEach(result => {
+                let dataset = emissionsChart.data.datasets.find(d => d.label === result.model);
+                if (!dataset) {
+                    dataset = {
+                        label: result.model,
+                        backgroundColor: 'rgba(0, 0, 0, 0)',
+                        borderColor: getRandomColor(),
+                        data: [],
+                        fill: false
+                    };
+                    emissionsChart.data.datasets.push(dataset);
+                }
+                dataset.data.push(result.emissions);
+
+                if (emissionsChart.data.labels.length > 10) {
+                    emissionsChart.data.labels.shift();
+                    emissionsChart.data.datasets.forEach(set => set.data.shift());
+                }
+            });
+            emissionsChart.update();
+        }
+
+        function updateEmissionsData(data) {
+            const tableBody = document.getElementById('emissionsTable').querySelector('tbody');
+            tableBody.innerHTML = '';  // Clear existing rows
+            data.results.forEach(result => {
+                const row = tableBody.insertRow();
+                row.insertCell().textContent = result.model;
+                row.insertCell().textContent = result.emissions.toFixed(9);
+                row.insertCell().textContent = result.cumulative_emissions.toFixed(9);
+                row.insertCell().textContent = result.carbon_tax.toFixed(8);  // Updated for 10^(-8) INR precision
+            });
+        }
+      
+        function updateUtilizationChart(data) {
+            const timestamp = new Date().toLocaleTimeString();
+            utilizationChart.data.labels.push(timestamp);
+            utilizationChart.data.datasets[0].data.push(data.cpu_usage);
+            utilizationChart.data.datasets[1].data.push(data.gpu_usage);
+
+            if (utilizationChart.data.labels.length > 10) {
+                utilizationChart.data.labels.shift();
+                utilizationChart.data.datasets.forEach(set => set.data.shift());
+            }
+            utilizationChart.update();
+        }
+
+        function getRandomColor() {
+            const r = Math.floor(Math.random() * 256);
+            const g = Math.floor(Math.random() * 256);
+            const b = Math.floor(Math.random() * 256);
+            return `rgba(${r}, ${g}, ${b}, 1)`;
+        }
+    </script>
+</body>
+</html>

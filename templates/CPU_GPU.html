@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real-Time System Utilization Dashboard</title>
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; }
+        #chartContainer { width: auto; height: 400px; }
+        canvas { width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+    <h1>Real-Time System Utilization</h1>
+    <canvas id="utilizationChart"></canvas>
+
+    <script>
+        const socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+        const ctx = document.getElementById('utilizationChart').getContext('2d');
+        const utilizationChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'CPU Usage (%)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        data: [],
+                        fill: true,
+                    },
+                    {
+                        label: 'GPU Usage (%)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        data: [],
+                        fill: true,
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    y: { beginAtZero: true, max: 100 }
+                },
+                animation: { duration: 0 }
+            }
+        });
+
+        socket.on('system_metrics', function(data) {
+            if (utilizationChart.data.labels.length > 30) {
+                utilizationChart.data.labels.shift();
+                utilizationChart.data.datasets.forEach((dataset) => dataset.data.shift());
+            }
+            utilizationChart.data.labels.push(new Date().toLocaleTimeString());
+            utilizationChart.data.datasets[0].data.push(data.cpu_usage);
+            utilizationChart.data.datasets[1].data.push(data.gpu_usage);
+            utilizationChart.update();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real-Time Emissions and System Utilization Dashboard</title>
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; }
+        canvas { width: 100%; height: 300px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Real-Time Emissions and System Utilization Dashboard</h1>
+    <h2>Model Emissions</h2>
+    <canvas id="emissionsChart"></canvas>
+    <h2>System Utilization</h2>
+    <canvas id="systemUtilizationChart"></canvas>
+
+    <script>
+        const ctxEmissions = document.getElementById('emissionsChart').getContext('2d');
+        const emissionsChart = new Chart(ctxEmissions, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Emissions (kg of CO2)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    }
+                },
+                animation: {
+                    duration: 0 // Turn off animation to improve performance
+                },
+                elements: {
+                    line: {
+                        tension: 0.1 // Slightly smooth line
+                    }
+                }
+            }
+        });
+
+        const ctxSystem = document.getElementById('systemUtilizationChart').getContext('2d');
+        const systemChart = new Chart(ctxSystem, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'CPU Usage (%)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        data: [],
+                        fill: true
+                    },
+                    {
+                        label: 'GPU Usage (%)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        data: [],
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Usage (%)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    }
+                },
+                animation: {
+                    duration: 0
+                },
+                elements: {
+                    line: {
+                        tension: 0.1
+                    }
+                }
+            }
+        });
+
+        const socket = io();
+
+        socket.on('model_emissions', function(data) {
+            updateChart(emissionsChart, data, 'emissions');
+        });
+
+        socket.on('system_metrics', function(data) {
+            updateChart(systemChart, data, 'metrics');
+        });
+
+        function updateChart(chart, data, type) {
+            const timestamp = new Date().toLocaleTimeString();
+            if (chart.data.labels.length >= 10) {
+                chart.data.labels.shift(); // Remove the first label
+            }
+            chart.data.labels.push(timestamp); // Add new label
+
+            if (type === 'emissions') {
+                data.results.forEach(result => {
+                    let dataset = chart.data.datasets.find(d => d.label === result.model);
+                    if (!dataset) {
+                        dataset = {
+                            label: result.model,
+                            borderColor: getRandomColor(),
+                            backgroundColor: getRandomColor(),
+                            data: [],
+                            fill: false
+                        };
+                        chart.data.datasets.push(dataset);
+                    }
+                    if (dataset.data.length >= 10) {
+                        dataset.data.shift(); // Limit data points
+                    }
+                    dataset.data.push(result.emissions);
+                });
+            } else if (type === 'metrics') {
+                chart.data.datasets[0].data.push(data.cpu_usage); // CPU Usage
+                if (chart.data.datasets[0].data.length >= 10) {
+                    chart.data.datasets[0].data.shift();
+                }
+                chart.data.datasets[1].data.push(data.gpu_usage); // GPU Usage
+                if (chart.data.datasets[1].data.length >= 10) {
+                    chart.data.datasets[1].data.shift();
+                }
+            }
+
+            chart.update();
+        }
+
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+    </script>
+</body>
+</html>
